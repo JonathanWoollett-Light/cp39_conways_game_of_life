@@ -62,7 +62,8 @@ fn run(mut board:Vec<Vec<bool>>,mut min_x:i8,mut min_y:i8,iterations:u8) -> (){
     for _ in 0..iterations {
         let mut new_board:Vec<Vec<bool>> = board.clone();
         let x_len = board[0].len();
-        let mut expand = (0u8,0u8); // (x,y)
+        let mut expand = (false,false,false,false); // (+x,-x,+y,-y)
+        let mut shrink = (true,true,true,true); // (+x,-x,+y,-y)
         for y in 1..board.len() - 1 {
             for x in 1..x_len - 1 {
                 let mut living_neighbours = 0u8;
@@ -80,34 +81,58 @@ fn run(mut board:Vec<Vec<bool>>,mut min_x:i8,mut min_y:i8,iterations:u8) -> (){
                     new_board[y][x] = true;
                     //println!("({},{}) ITS ALIVE!",x,y);
 
-                    //Checks if expansion is on edge of board
-                    if x == x_len-2 { expand.0 = 1; }
-                    else if x == 1 { expand.0 = 2; }
-                    if y == board.len()-2 { expand.1 = 1; }
-                    else if y == 1 { expand.1 = 2; }
+                    //Checks if board needs to expand on any edge
+                    if x == x_len-2 { expand.0 = true; }
+                    else if x == 1 { expand.1 = true; }
+                    if y == board.len()-2 { expand.2 = true; }
+                    else if y == 1 { expand.3 = true; }
+
+                    //Checks if board cannot shrink on any edge
+                    if x >= x_len-3 { shrink.0 = false; }
+                    else if x <= 2 { shrink.1 = false; }
+                    if y >= board.len()-3 { shrink.2 = false; }
+                    else if y <= 2 { shrink.3 = false; }
                 }
                 //println!("---------------------------------");
             }
         }
         //print_board(&new_board,min_x,min_y);
-        //Expand board
-        if expand.0 == 2 {
+        //Expand or shrink board
+        if expand.0 {
+            for i in 0..new_board.len() {
+                new_board[i].push(false);
+            }
+        }
+        else if shrink.0 {
+            for i in 0..new_board.len() {
+                new_board[i].pop();
+            }
+        }
+        if expand.1 {
             min_x -= 1;
             for i in 0..new_board.len() {
                 new_board[i].insert(0, false);
             }
         }
-        if expand.0 == 1 {
+        else if shrink.1 {
+            min_x += 1;
             for i in 0..new_board.len() {
-                new_board[i].push(false);
+                new_board[i].remove(0);
             }
         }
-        if expand.1 == 2 {
+        if expand.2 {
+            new_board.push(vec![false;x_len]);
+        }
+        else if shrink.2 {
+            new_board.pop();
+        }
+        if expand.3 {
             min_y -= 1;
             new_board.insert(0, vec![false;x_len]);
         }
-        if expand.1 == 1 {
-            new_board.push(vec![false;x_len]);
+        else if shrink.3 {
+            min_y += 1;
+            new_board.remove(0);
         }
         board = new_board;
         print_board(&board,min_x,min_y);
@@ -117,7 +142,7 @@ fn run(mut board:Vec<Vec<bool>>,mut min_x:i8,mut min_y:i8,iterations:u8) -> (){
 fn print_board(board: &Vec<Vec<bool>>,min_x:i8,min_y:i8) -> () {
     let x_len = board[0].len();
     for y in 0..board.len() {
-        print!("{:.2} | ",format!("{:0>2}",y as i8 + min_y - (board.len() as f32 / 4f32).ceil() as i8));
+        print!("{} | ",format!("{:0>2}",y as i8 + min_y - (board.len() as f32 / 4f32).ceil() as i8));
         for x in 0..x_len {
             print!("{}  ",if board[y][x] { "X" } else { "." })
         }
@@ -126,7 +151,7 @@ fn print_board(board: &Vec<Vec<bool>>,min_x:i8,min_y:i8) -> () {
     println!("    {}","---".repeat(x_len));
     print!("     ");
     for x in 0..x_len {
-        print!("{:.2} ",format!("{:0>2}", x as i8 + min_x - (board[0].len() as f32 / 4f32).ceil() as i8))
+        print!("{} ",format!("{:0>2}", x as i8 + min_x - (board[0].len() as f32 / 4f32).ceil() as i8))
     }
     println!();
 }
